@@ -56,3 +56,34 @@ class AuthAPI(CustomRequester):
             expected_status=expected_status,
             need_logging=need_logging
         )
+
+    def get_user(self, user_id, expected_status=200):
+        """
+        Получение информации о пользователе.
+        """
+        return self.send_request(
+            method="GET",
+            endpoint=f"/users/{user_id}",
+            expected_status=expected_status
+        )
+
+    def update_user(self, user_id, user_data, expected_status=200):
+        """
+        Обновление данных пользователя.
+        """
+        return self.send_request(
+            method="PUT",
+            endpoint=f"/users/{user_id}",
+            data=user_data,
+            expected_status=expected_status
+        )
+
+    def delete_user(self, user_id, expected_status=204):
+        """
+        Удаление пользователя.
+        """
+        return self.send_request(
+            method="DELETE",
+            endpoint=f"/users/{user_id}",
+            expected_status=expected_status
+        )

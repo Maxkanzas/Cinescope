@@ -177,18 +177,6 @@ def movie_data_empty():
     return {}
 
 @pytest.fixture(scope="function")
-def movie_invalid_data():
-    return {
-        "name": 211,
-        "description": DataGenerator.generate_random_sentence(10),
-        "price": DataGenerator.generate_random_int(100, 1000),
-        "location": DataGenerator.random_choice(["MSK", "SPB"]),
-        "genreId": DataGenerator.generate_random_int(1, 10),
-        "imageUrl": "https://kg-portal.ru/img/134224/main.webp",
-        "published": False
-    }
-
-@pytest.fixture(scope="function")
 def movie_data_update():
     return {
         "name": f"{DataGenerator.generate_random_string(5)}",
@@ -225,3 +213,53 @@ def movie_data_genres_duplicate():
     return {
         "name": "Драма"
     }
+
+@pytest.fixture(scope="function")
+def params_get_movies_with_filters():
+    return {
+        "pageSize": DataGenerator.generate_random_int(1, 5),
+        "page": DataGenerator.generate_random_int(1, 5),
+        "minPrice": DataGenerator.generate_random_int(100, 100),
+        "maxPrice": DataGenerator.generate_random_int(500, 500),
+        "locations": DataGenerator.random_choice(["MSK", "SPB"]),
+        "published": True,
+        "genreId": DataGenerator.generate_random_int(1, 10),
+        "createdAt": "desc"
+    }
+
+@pytest.fixture(scope="function")
+def movie_invalid_data():
+    return {
+        "pageSize": DataGenerator.generate_random_int(-10, 0),
+        "page": DataGenerator.generate_random_int(1, 5),
+        "minPrice": DataGenerator.generate_random_int(100, 100),
+        "maxPrice": DataGenerator.generate_random_int(500, 500),
+        "locations": DataGenerator.random_choice(["MSK", "SPB"]),
+        "published": True,
+        "genreId": DataGenerator.generate_random_int(1, 10),
+        "createdAt": "desc"
+    }
+
+@pytest.fixture(scope="function")
+def movie_data_invalid():
+    return {
+        "name": 211,
+        "description": DataGenerator.generate_random_sentence(10),
+        "price": DataGenerator.generate_random_int(100, 1000),
+        "location": DataGenerator.random_choice(["MSK", "SPB"]),
+        "genreId": DataGenerator.generate_random_int(1, 10),
+        "imageUrl": "https://kg-portal.ru/img/134224/main.webp",
+        "published": False
+    }
+
+@pytest.fixture(scope="session")
+def movie_id_invalid():
+    return f"{DataGenerator.generate_random_string(5)}"
+
+@pytest.fixture(scope="function")
+def movie_id():
+    return f"{DataGenerator.generate_random_int(600, 900)}"
+
+@pytest.fixture(scope="session")
+def user_id():
+    return "a76b8bf9-af13-45bb-b200-b9db86db26d3"
