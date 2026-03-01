@@ -259,7 +259,3 @@ def movie_id_invalid():
 @pytest.fixture(scope="function")
 def movie_id():
     return f"{DataGenerator.generate_random_int(600, 900)}"
-
-@pytest.fixture(scope="session")
-def user_id():
-    return "a76b8bf9-af13-45bb-b200-b9db86db26d3"

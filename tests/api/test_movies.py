@@ -3,6 +3,7 @@ from api import movies_api
 from api.movies_api import MoviesAPI
 from conftest import api_manager
 from api.api_manager import ApiManager
+from constants import USER_ADMIN
 
 class TestMoviesApi:
     def test_get_movies_default_params(self, api_manager:ApiManager):
@@ -175,7 +176,7 @@ class TestMoviesApi:
         assert response_get_movie_data["error"] == "Not Found"
         assert response_get_movie_data["statusCode"] == 404
 
-    def test_create_reviews_movie(self, admin_api_manager:ApiManager, movie_data_random, movie_data_review, user_id):
+    def test_create_reviews_movie(self, admin_api_manager:ApiManager, movie_data_random, movie_data_review):
         response_create_movie = admin_api_manager.movies_api.create_movie(movie_data_random)
         response_create_movie_data = response_create_movie.json()
         response_movie_id = response_create_movie_data['id']
@@ -187,9 +188,9 @@ class TestMoviesApi:
         assert "createdAt" in response_create_review_movie_data
         assert "user" in response_create_review_movie_data
         assert response_create_review_movie_data["user"]['fullName'] == "Админ Кокосовый Куа"
-        response_delete_movie = admin_api_manager.movies_api.delete_reviews_movie(response_movie_id, user_id)
+        response_delete_movie = admin_api_manager.movies_api.delete_reviews_movie(response_movie_id, USER_ADMIN)
         response_delete_movie_data = response_delete_movie.json()
-        assert response_delete_movie_data['userId'] == user_id
+        assert response_delete_movie_data['userId'] == USER_ADMIN
         assert response_delete_movie_data['text'] == movie_data_review['text']
         assert response_delete_movie_data['rating'] == movie_data_review['rating']
         assert 'createdAt' in response_delete_movie_data
@@ -207,8 +208,8 @@ class TestMoviesApi:
         assert response_create_review_second_data['error'] == "Conflict"
         assert response_create_review_second_data['statusCode'] == 409
 
-    def test_delete_reviews_not_found_movie(self, admin_api_manager:ApiManager, movie_id_invalid, user_id):
-        response_delete_movie = admin_api_manager.movies_api.delete_reviews_movie(movie_id_invalid, user_id,
+    def test_delete_reviews_not_found_movie(self, admin_api_manager:ApiManager, movie_id_invalid):
+        response_delete_movie = admin_api_manager.movies_api.delete_reviews_movie(movie_id_invalid, USER_ADMIN,
                                                                                   expected_status=404)
         response_delete_movie_data = response_delete_movie.json()
         assert response_delete_movie_data['message'] == "Отзыв не найден"
@@ -216,7 +217,7 @@ class TestMoviesApi:
         assert response_delete_movie_data['statusCode'] == 404
 
     def test_update_reviews_movie(self, admin_api_manager:ApiManager, movie_data_random, movie_data_review,
-                                  movie_data_review_update, user_id):
+                                  movie_data_review_update):
         response_create_movie = admin_api_manager.movies_api.create_movie(movie_data_random)
         response_create_movie_data = response_create_movie.json()
         response_movie_id = response_create_movie_data['id']
@@ -225,7 +226,7 @@ class TestMoviesApi:
         response_update_movie = admin_api_manager.movies_api.update_reviews_movie(response_movie_id,
                                                                                   movie_data_review_update)
         response_update_movie_data = response_update_movie.json()
-        assert response_update_movie_data['userId'] == user_id
+        assert response_update_movie_data['userId'] == USER_ADMIN
         assert response_update_movie_data['text'] == movie_data_review_update['text']
         assert response_update_movie_data['rating'] == movie_data_review_update['rating']
         assert response_update_movie_data['movieId'] == response_movie_id
@@ -241,44 +242,44 @@ class TestMoviesApi:
         assert response_data['error'] == "Not Found"
         assert response_data['statusCode'] == 404
 
-    def test_hidden_reviews_movie(self, admin_api_manager:ApiManager, movie_data_random, movie_data_review, user_id):
+    def test_hidden_reviews_movie(self, admin_api_manager:ApiManager, movie_data_random, movie_data_review):
         response_create_movie = admin_api_manager.movies_api.create_movie(movie_data_random)
         response_create_movie_data = response_create_movie.json()
         response_movie_id = response_create_movie_data['id']
         response_create_review_movie = admin_api_manager.movies_api.create_reviews_movie(response_movie_id,
                                                                                          movie_data_review)
-        response_hidden_movie_reviews = admin_api_manager.movies_api.hidden_reviews_movie(response_movie_id, user_id)
+        response_hidden_movie_reviews = admin_api_manager.movies_api.hidden_reviews_movie(response_movie_id, USER_ADMIN)
         response_hidden_movie_reviews_data = response_hidden_movie_reviews.json()
-        assert response_hidden_movie_reviews_data['userId'] == user_id
+        assert response_hidden_movie_reviews_data['userId'] == USER_ADMIN
         assert response_hidden_movie_reviews_data['text'] == movie_data_review['text']
         assert response_hidden_movie_reviews_data['rating'] == movie_data_review['rating']
         assert "createdAt" in response_hidden_movie_reviews_data
         assert response_hidden_movie_reviews_data['user']['fullName'] == "Админ Кокосовый Куа"
         admin_api_manager.movies_api.delete_movie(response_movie_id)
 
-    def test_hidden_not_found_reviews(self, admin_api_manager:ApiManager, movie_data_review, movie_id_invalid, user_id):
-        response = admin_api_manager.movies_api.hidden_reviews_movie(movie_id_invalid, user_id, expected_status=404)
+    def test_hidden_not_found_reviews(self, admin_api_manager:ApiManager, movie_data_review, movie_id_invalid):
+        response = admin_api_manager.movies_api.hidden_reviews_movie(movie_id_invalid, USER_ADMIN, expected_status=404)
         response_data = response.json()
         assert response_data['message'] == "Отзыв не найден"
         assert response_data['error'] == "Not Found"
         assert response_data['statusCode'] == 404
 
-    def test_show_reviews_movie(self, admin_api_manager:ApiManager, movie_data_random, movie_data_review, user_id):
+    def test_show_reviews_movie(self, admin_api_manager:ApiManager, movie_data_random, movie_data_review):
         response_create_movie = admin_api_manager.movies_api.create_movie(movie_data_random)
         response_create_movie_data = response_create_movie.json()
         response_movie_id = response_create_movie_data['id']
         response_create_review_movie = admin_api_manager.movies_api.create_reviews_movie(response_movie_id,
                                                                                          movie_data_review)
-        response_hidden_movie_reviews = admin_api_manager.movies_api.show_reviews_movie(response_movie_id, user_id)
+        response_hidden_movie_reviews = admin_api_manager.movies_api.show_reviews_movie(response_movie_id, USER_ADMIN)
         response_hidden_movie_reviews_data = response_hidden_movie_reviews.json()
-        assert response_hidden_movie_reviews_data['userId'] == user_id
+        assert response_hidden_movie_reviews_data['userId'] == USER_ADMIN
         assert response_hidden_movie_reviews_data['text'] == movie_data_review['text']
         assert response_hidden_movie_reviews_data['rating'] == movie_data_review['rating']
         assert "createdAt" in response_hidden_movie_reviews_data
         assert response_hidden_movie_reviews_data['user']['fullName'] == "Админ Кокосовый Куа"
 
-    def test_show_not_found_reviews(self, admin_api_manager:ApiManager, movie_data_review, movie_id_invalid, user_id):
-        response = admin_api_manager.movies_api.show_reviews_movie(movie_id_invalid, user_id, expected_status=404)
+    def test_show_not_found_reviews(self, admin_api_manager:ApiManager, movie_data_review, movie_id_invalid):
+        response = admin_api_manager.movies_api.show_reviews_movie(movie_id_invalid, USER_ADMIN, expected_status=404)
         response_data = response.json()
         assert response_data['message'] == "Отзыв не найден"
         assert response_data['error'] == "Not Found"
