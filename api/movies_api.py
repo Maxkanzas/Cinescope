@@ -1,6 +1,5 @@
-from requests import Response
 from custom_requester.custom_requester import CustomRequester
-from constants import MOVIE_ENDPOINT, MOVIE_REVIEWS_ENDPOINT, MOVIE_GENRES_ENDPOINT
+from constants.endpoints import MOVIE_ENDPOINT, MOVIE_REVIEWS_ENDPOINT, MOVIE_GENRES_ENDPOINT
 
 class MoviesAPI(CustomRequester):
 

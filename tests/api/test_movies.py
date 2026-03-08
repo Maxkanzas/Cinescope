@@ -1,9 +1,8 @@
 import pytest
-from api import movies_api
-from api.movies_api import MoviesAPI
+
 from conftest import api_manager
 from api.api_manager import ApiManager
-from constants import USER_ADMIN
+from constants.endpoints import USER_ADMIN
 
 class TestMoviesApi:
     def test_get_movies_default_params(self, api_manager:ApiManager):
@@ -32,6 +31,42 @@ class TestMoviesApi:
             assert movie['location'] == params_get_movies_with_filters['locations'], f"Локация {movie['location']} не соответствует MSK"
             assert movie['genreId'] == params_get_movies_with_filters['genreId'], f"Жанр {movie['genreId']} не соответствует 1"
             assert movie['published'] is True, "Фильм не опубликован"
+
+    @pytest.mark.parametrize("minPrice,maxPrice,locations,genreId,expected_status", [
+        (50, 200, "MSK", 1, 200),
+        (100, 500, "SPB", 2, 200),
+        (500, 100, "MSK", 5, 400),
+        (None, None, "MSK", None, 200),
+        (None, None, None, 3, 200),
+        (None, None, "SPB", 4, 200)
+    ], ids=[
+        "Valid full filter (MSK, genre 1, price 50-200)",
+        "Valid full filter (SPB, genre 2, price 100-500)",
+        "Min price > max price (expected empty list)",
+        "Only locations filter (MSK)",
+        "Only genre filter (genre 3)",
+        "Locations and genre filter (SPB, genre 4)"
+    ])
+    def test_get_movies_with_params(self, common_user, minPrice, maxPrice, locations, genreId, expected_status):
+        params = {}
+        if minPrice is not None:
+            params["minPrice"] = minPrice
+        if maxPrice is not None:
+            params["maxPrice"] = maxPrice
+        if locations is not None:
+            params["locations"] = locations
+        if genreId is not None:
+            params["genreId"] = genreId
+        response = common_user.api.movies_api.get_movies(params=params, expected_status=expected_status)
+        response_data = response.json()
+        if expected_status == 400:
+            assert response_data["message"] == "minPrice must be less than maxPrice"
+            assert response_data["error"] == "Bad Request"
+            assert response_data["statusCode"] == 400
+        else:
+            assert "movies" in response_data
+            assert isinstance(response_data['movies'], list)
+
 
     def test_get_movies_invalid_params(self, api_manager: ApiManager, movie_invalid_data):
         response = api_manager.movies_api.get_movies(params=movie_invalid_data, expected_status=400)
@@ -75,6 +110,15 @@ class TestMoviesApi:
         assert response_data['imageUrl'] == movie_data_random['imageUrl']
         assert response_data['published'] == movie_data_random['published']
 
+    @pytest.mark.api
+    def test_create_movie_with_user_role(self, common_user, movie_data_random):
+        response = common_user.api.user_api.create_user(movie_data_random, expected_status=403)
+        response_data = response.json()
+        assert response_data['message'] == "Forbidden resource"
+        assert response_data['error'] == "Forbidden"
+        assert response_data['statusCode'] == 403
+
+    @pytest.mark.api
     def test_create_duplicate_movie(self, admin_api_manager: ApiManager, auth_session_admin, movie_data_duplicate):
         response = admin_api_manager.movies_api.create_movie(movie_data_duplicate, expected_status=409)
         response_data = response.json()
@@ -83,6 +127,7 @@ class TestMoviesApi:
         assert "error" in response_data
         assert "statusCode" in response_data
 
+    @pytest.mark.api
     def test_create_empty_movie(self, admin_api_manager: ApiManager, auth_session_admin, movie_data_empty):
         response = admin_api_manager.movies_api.create_movie(movie_data_empty, expected_status=400)
         response_data = response.json()
@@ -100,25 +145,39 @@ class TestMoviesApi:
         assert response_data["error"] == "Bad Request"
         assert response_data['message'] == expected_messages
 
-    def test_delete_movie_by_id(self, admin_api_manager: ApiManager, movie_data_random):
-        response_create_movie = admin_api_manager.movies_api.create_movie(movie_data_random)
+    @pytest.mark.parametrize("user_fixture, expected_status", [
+        ("common_super_admin", 200),
+        ("common_admin", 403),
+        ("common_user", 403)
+    ], ids=[
+        "Delete movie as SUPER_ADMIN (success)",
+        "Delete movie as ADMIN (forbidden)",
+        "Delete movie as USER (forbidden)"
+    ])
+    def test_delete_movie_by_id(self, request, common_super_admin, user_fixture, expected_status, movie_data_random):
+        test_user = request.getfixturevalue(user_fixture)
+        response_create_movie = common_super_admin.api.movies_api.create_movie(movie_data_random)
         response_create_movie_data = response_create_movie.json()
         response_movie_id = response_create_movie_data['id']
-        response_delete_movie = admin_api_manager.movies_api.delete_movie(response_movie_id)
+        response_delete_movie = test_user.api.movies_api.delete_movie(response_movie_id, expected_status=expected_status)
         response_delete_movie_data = response_delete_movie.json()
-        assert response_create_movie_data['id'] == response_delete_movie_data['id']
-        assert response_create_movie_data['name'] == response_delete_movie_data['name']
-        assert response_create_movie_data['description'] == response_delete_movie_data['description']
-        assert response_create_movie_data['price'] == response_delete_movie_data['price']
-        assert response_create_movie_data['location'] == response_delete_movie_data['location']
-        assert response_create_movie_data['genreId'] == response_delete_movie_data['genreId']
-        assert response_create_movie_data['imageUrl'] == response_delete_movie_data['imageUrl']
-        assert response_create_movie_data['published'] == response_delete_movie_data['published']
-        response_get_movie = admin_api_manager.movies_api.get_movie(response_movie_id, expected_status=404)
-        response_get_movie_data = response_get_movie.json()
-        assert response_get_movie_data['message'] == "Фильм не найден"
-        assert response_get_movie_data['error'] == "Not Found"
-        assert response_get_movie_data['statusCode'] == 404
+        if expected_status == 200:
+            assert response_create_movie_data['id'] == response_delete_movie_data['id']
+            assert response_create_movie_data['name'] == response_delete_movie_data['name']
+            assert response_create_movie_data['description'] == response_delete_movie_data['description']
+            assert response_create_movie_data['price'] == response_delete_movie_data['price']
+            assert response_create_movie_data['location'] == response_delete_movie_data['location']
+            assert response_create_movie_data['genreId'] == response_delete_movie_data['genreId']
+            assert response_create_movie_data['imageUrl'] == response_delete_movie_data['imageUrl']
+            assert response_create_movie_data['published'] == response_delete_movie_data['published']
+            common_super_admin.api.movies_api.get_movie(response_movie_id, expected_status=404)
+        else:
+            assert response_delete_movie_data['message'] == "Forbidden resource"
+            assert response_delete_movie_data['error'] == "Forbidden"
+            assert response_delete_movie_data['statusCode'] == 403
+            response_get_movie = common_super_admin.api.movies_api.get_movie(response_movie_id)
+            assert response_get_movie.json()['id'] == response_movie_id
+            common_super_admin.api.movies_api.delete_movie(response_movie_id, expected_status=200)
 
     def test_delete_movie_empty(self, admin_api_manager: ApiManager, movie_data_random, movie_id_invalid):
         response_delete_movie = admin_api_manager.movies_api.delete_movie(movie_id_invalid, expected_status=404)

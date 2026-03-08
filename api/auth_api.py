@@ -1,5 +1,6 @@
 from custom_requester.custom_requester import CustomRequester
-from constants import LOGIN_ENDPOINT, USER_ENDPOINT, REGISTER_ENDPOINT
+from constants.endpoints import LOGIN_ENDPOINT, USER_ENDPOINT, REGISTER_ENDPOINT, LOGOUT_ENDPOINT, \
+    REFRESH_TOKEN_ENDPOINT, CONFIRM_EMAIL_ENDPOINT
 
 
 class AuthAPI(CustomRequester):
@@ -67,6 +68,16 @@ class AuthAPI(CustomRequester):
             expected_status=expected_status
         )
 
+    def logout(self, expected_status=200):
+        """
+        Выход из учётной записи.
+        """
+        return self.send_request(
+            method="GET",
+            endpoint=LOGOUT_ENDPOINT,
+            expected_status=expected_status
+        )
+
     def update_user(self, user_id, user_data, expected_status=200):
         """
         Обновление данных пользователя.
@@ -85,5 +96,27 @@ class AuthAPI(CustomRequester):
         return self.send_request(
             method="DELETE",
             endpoint=f"/users/{user_id}",
+            expected_status=expected_status
+        )
+
+    def refresh_token(self, expected_status=201):
+        """
+        Обновление токена.
+        """
+        return self.send_request(
+            method="GET",
+            endpoint=REFRESH_TOKEN_ENDPOINT,
+            expected_status=expected_status
+        )
+
+    def confirm_email(self, token, expected_status=201):
+        """
+        Подтверждение email.
+        """
+        print(f"\n✅ confirm_email вызван с token={token}")
+        return self.send_request(
+            method="GET",
+            endpoint=CONFIRM_EMAIL_ENDPOINT,
+            data={"token": token},
             expected_status=expected_status
         )
